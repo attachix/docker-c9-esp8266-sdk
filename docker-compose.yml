@@ -1,0 +1,15 @@
+attchix-c9-esp:
+
+ build: .
+ 
+# volumes:
+#   - ../../Sming/:/workspace/Sming/
+   
+ ports:
+ - "10080:8181"
+ 
+ devices:
+  - "/dev/ttyUSB0:/dev/ttyUSB0"
+
+ 
+ privileged: true 
