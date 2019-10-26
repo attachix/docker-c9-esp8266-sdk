@@ -1,14 +1,31 @@
-FROM gliderlabs/alpine
-MAINTAINER Slavey Karadzhov <slav@attachix.com>
-# Based on https://github.com/anatolinicolae/cloud9-docker.git
+FROM alpine:3.10
+MAINTAINER Slavey Karadzhov "slav@attachix.com"
 
 # ------------------------------------------------------------------------------
 # Install Cloud9 and Supervisor
 # ------------------------------------------------------------------------------
 
-RUN apk --update add build-base g++ make curl wget openssl-dev apache2-utils git libxml2-dev sshfs nodejs bash tmux supervisor python python-dev py-pip \
- && rm -f /var/cache/apk/*\
- && git clone https://github.com/c9/core.git /cloud9 \
+RUN apk --update --no-cache add \
+        apache2-utils \
+      	bash \
+      	build-base \
+      	curl \
+      	g++ \
+      	git \
+      	libxml2-dev \
+      	make \
+      	npm \
+      	nodejs \
+      	openssl-dev \
+      	python \
+      	python-dev \
+      	py-pip \
+      	sshfs \
+      	supervisor \
+      	tmux \
+      	wget
+
+RUN git clone https://github.com/c9/core.git /cloud9 \
  && curl -s -L https://raw.githubusercontent.com/c9/install/master/link.sh | bash \
  && /cloud9/scripts/install-sdk.sh \
  && sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js \
@@ -25,10 +42,9 @@ ADD supervisord.conf /etc/
 
 # Download and install glibc compatability
 
-ENV GLIBC_VERSION 2.25-r0
+ENV GLIBC_VERSION 2.30-r0
 
-RUN apk add --update curl && \
-  curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub && \
+RUN curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
   curl -Lo glibc.apk "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk" && \
   curl -Lo glibc-bin.apk "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk" && \
   apk add glibc-bin.apk glibc.apk && \
@@ -38,13 +54,13 @@ RUN apk add --update curl && \
 
 RUN cd /tmp && \
     mkdir -p /opt/esp-open-sdk && \
-    wget https://github.com/nodemcu/nodemcu-firmware/raw/master/tools/esp-open-sdk.tar.xz && \
-    tar -Jxvf esp-open-sdk.tar.xz && \ 
+    wget https://github.com/nodemcu/nodemcu-firmware/raw/2d958750b56fc60297f564b4ec303e47928b5927/tools/esp-open-sdk.tar.xz && \
+    tar -Jxvf esp-open-sdk.tar.xz && \
     mv esp-open-sdk/xtensa-lx106-elf /opt/esp-open-sdk/. && \
     rm esp-open-sdk.tar.xz && \
-    echo 'export PATH=/opt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH' >> /etc/profile.d/esp8266.sh 
+    echo 'export PATH=/opt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH' >> /etc/profile.d/esp8266.sh
 
-# ------------------------------------------------------------------------------    
+# ------------------------------------------------------------------------------
 # Install Espressif NONOS SDK v2.0
 # ------------------------------------------------------------------------------
 
@@ -61,7 +77,7 @@ RUN cd /tmp && \
 ENV PATH /opt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
 ENV XTENSA_TOOLS_ROOT /opt/esp-open-sdk/xtensa-lx106-elf/bin
 ENV SDK_BASE /opt/esp-open-sdk/sdk
-ENV FW_TOOL /opt/esp-open-sdk/xtensa-lx106-elf/bin/esptool.py  
+ENV FW_TOOL /opt/esp-open-sdk/xtensa-lx106-elf/bin/esptool.py
 
 ENV ESP_HOME /opt/esp-open-sdk
 
@@ -80,10 +96,12 @@ RUN cd /tmp && \
 
 # Install esptool2
 RUN cd $ESP_HOME && git clone https://github.com/raburton/esptool2 && cd $ESP_HOME/esptool2 && git checkout ec0e2c72952f4fa8242eedd307c58a479d845abe && \
-    cd $ESP_HOME/esptool2 && make && echo 'export PATH=$ESP_HOME/esptool2:$PATH' >> /etc/profile.d/esp8266.sh 
+    cd $ESP_HOME/esptool2 && make && echo 'export PATH=$ESP_HOME/esptool2:$PATH' >> /etc/profile.d/esp8266.sh
 
 ENV PATH $ESP_HOME/esptool2:$PATH
 
 EXPOSE 80
 
-ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
+SHELL ["/bin/bash", "-c"]
+
+CMD ["/usr/bin/supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
