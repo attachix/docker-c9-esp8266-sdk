@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM node:8.17-alpine
 MAINTAINER Slavey Karadzhov "slav@attachix.com"
 
 # ------------------------------------------------------------------------------
